@@ -3,6 +3,23 @@ const app = express();
 const PORT = 8080; // default port 8080
 
 app.set("view engine", "ejs");
+const bodyParser = require("body-parser");
+app.use(bodyParser.urlencoded({extended: true}));
+
+//function content to generate random string of 6 characters
+const allCapsAlpha = [..."ABCDEFGHIJKLMNOPQRSTUVWXYZ"];
+const allLowerAlpha = [..."abcdefghijklmnopqrstuvwxyz"];
+const allNumbers = [..."0123456789"];
+
+const base = [...allCapsAlpha, ...allNumbers, ...allLowerAlpha];
+
+const generateRandomString = (base, len) => {
+  return [...Array(len)]
+    .map(i => base[Math.random() * base.length | 0])
+    .join('');
+};
+
+//console.log('OUTPUT: ', generator(base, 6));
 
 const urlDatabase = {
   "b2xVn2": "http://www.lighthouselabs.ca",
@@ -20,6 +37,15 @@ app.get("/urls.json", (req, res) => {
 app.get("/urls", (req, res) => {
   const templateVars = { urls: urlDatabase };
   res.render("urls_index", templateVars);
+});
+
+app.post("/urls", (req, res) => {
+  console.log(req.body);  // Log the POST request body to the console
+  res.send("Ok");         // Respond with 'Ok' (we will replace this)
+});
+
+app.get("/urls/new", (req, res) => {
+  res.render("urls_new");
 });
 
 app.get("/urls/:shortURL", (req, res) => {

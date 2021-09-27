@@ -16,5 +16,8 @@
   "bugs": {
     "url": "https://github.com/AvantikaTheLearner/tinyapp/issues"
   },
-  "homepage": "https://github.com/AvantikaTheLearner/tinyapp#readme"
+  "homepage": "https://github.com/AvantikaTheLearner/tinyapp#readme",
+  "dependencies": {
+    "express": "^4.17.1"
+  }
 }

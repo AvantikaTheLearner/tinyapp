@@ -5,26 +5,14 @@ const PORT = 8080; // default port 8080
 app.set("view engine", "ejs");
 const bodyParser = require("body-parser");
 app.use(bodyParser.urlencoded({extended: true}));
-
-//function content to generate random string of 6 characters
-const allCapsAlpha = [..."ABCDEFGHIJKLMNOPQRSTUVWXYZ"];
-const allLowerAlpha = [..."abcdefghijklmnopqrstuvwxyz"];
-const allNumbers = [..."0123456789"];
-
-const base = [...allCapsAlpha, ...allNumbers, ...allLowerAlpha];
-
-const generateRandomString = (base, len) => {
-  return [...Array(len)]
-    .map(i => base[Math.random() * base.length | 0])
-    .join('');
-};
-
-//let shortURL = generateRandomString(base, 6);
+const cookieParser = require("cookie-parser");
+app.use(cookieParser());
 
 const urlDatabase = {
   "b2xVn2": "http://www.lighthouselabs.ca",
   "9sm5xK": "http://www.google.com"
 };
+
 
 /*app.get("/", (req, res) => {
   res.send("Hello!");
@@ -35,28 +23,39 @@ app.get("/urls.json", (req, res) => {
 });*/
 
 app.get("/urls", (req, res) => {
-  const templateVars = { urls: urlDatabase };
+  //line 27 verifies the cookie to remain set on multiple pages
+  //and to display the user name in every page if logged in
+  const userName = req.cookies["username"];
+  const templateVars = {
+    userName,
+    urls: urlDatabase };
   res.render("urls_index", templateVars);
 });
 
 app.post("/urls", (req, res) => {
   //console.log(req.body);  // Log the POST request body to the console
-  let shortURL = generateRandomString(base, 6);
+  let shortURL = Math.random().toString(36).substring(2,8);
   urlDatabase[shortURL] = req.body.longURL;
   res.redirect(`/urls/${shortURL}`);
 });
 
 app.get("/urls/new", (req, res) => {
-  res.render("urls_new");
+  const userName = req.cookies["username"];
+  const templateVars = {
+    userName};
+  res.render("urls_new", templateVars);
 });
 
 app.get("/urls/:shortURL", (req, res) => {
   const longURL = urlDatabase[req.params.shortURL];
+  const userName = req.cookies["username"];
   if (longURL === undefined) {
     res.redirect("/urls");
     return;
   }
-  const templateVars = { shortURL: req.params.shortURL, longURL: longURL };
+  const templateVars = {
+    userName,
+    shortURL: req.params.shortURL, longURL: longURL };
   res.render("urls_show", templateVars);
 });
 
@@ -77,6 +76,17 @@ app.post("/urls/:id", (req,res) => {
   urlDatabase[id] = req.body.quoteContent;
   res.redirect("/urls");
 });
+
+//Implementing Cookies
+app.post("/login", (req,res) => {
+  res.cookie('username', req.body.username);
+  res.redirect("/urls");
+});
+app.post("/logout", (req,res) => {
+  res.clearCookie('username');
+  res.redirect("/urls");
+});
+
 
 
 // app.get("/hello", (req, res) => {

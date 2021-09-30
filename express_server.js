@@ -13,6 +13,13 @@ const urlDatabase = {
   "9sm5xK": "http://www.google.com"
 };
 
+const users = {
+  "userRandomID": {
+    id: "userRandomID",
+    email: "user@example.com",
+    password: "purple-monkey-dinosaur"
+  }
+};
 
 /*app.get("/", (req, res) => {
   res.send("Hello!");
@@ -23,11 +30,12 @@ app.get("/urls.json", (req, res) => {
 });*/
 
 app.get("/urls", (req, res) => {
-  //line 27 verifies the cookie to remain set on multiple pages
+  //verifies the cookie to remain set on multiple pages
   //and to display the user name in every page if logged in
-  const userName = req.cookies["username"];
+  const userId = req.cookies["user_id"];
+  const loggedInUser = users[userId];
   const templateVars = {
-    userName,
+    user: loggedInUser,
     urls: urlDatabase };
   res.render("urls_index", templateVars);
 });
@@ -40,21 +48,23 @@ app.post("/urls", (req, res) => {
 });
 
 app.get("/urls/new", (req, res) => {
-  const userName = req.cookies["username"];
+  const userId = req.cookies["user_id"];
+  const loggedInUser = users[userId];
   const templateVars = {
-    userName};
+    user: loggedInUser,};
   res.render("urls_new", templateVars);
 });
 
 app.get("/urls/:shortURL", (req, res) => {
   const longURL = urlDatabase[req.params.shortURL];
-  const userName = req.cookies["username"];
+  const userId = req.cookies["user_id"];
+  const loggedInUser = users[userId];
   if (longURL === undefined) {
     res.redirect("/urls");
     return;
   }
   const templateVars = {
-    userName,
+    user: loggedInUser,
     shortURL: req.params.shortURL, longURL: longURL };
   res.render("urls_show", templateVars);
 });
@@ -77,14 +87,91 @@ app.post("/urls/:id", (req,res) => {
   res.redirect("/urls");
 });
 
+const createUser = function(email, password, users) {
+  const userID = Math.random().toString(36).substring(2,8);
+  
+  users[userID] = {
+    id: userID,
+    email,
+    password,
+  };
+  return userID;
+};
+
+const findUserByEmail = function(email, users) {
+  for (let userKey in users) {
+    const user = users[userKey];
+    if (user.email === email) {
+      return user;
+    }
+  }
+  return false;
+};
+
+const findUserByPassword = function(password, users) {
+  for (let userKey in users) {
+    const user = users[userKey];
+    if (user.password === password) {
+      return user.id;
+    }
+  }
+  return false;
+};
+
 //Implementing Cookies
 app.post("/login", (req,res) => {
-  res.cookie('username', req.body.username);
-  res.redirect("/urls");
+  const email = req.body.email;
+  const password = req.body.password;
+  const userFoundByEmail = findUserByEmail(email, users);
+  const userFoundByPassword = findUserByPassword(password, users);
+
+  if (!userFoundByEmail) {
+    res.status(403).send("User cannot be found");
+  } else if (userFoundByEmail && userFoundByPassword) {
+    res.cookie('user_id', userFoundByPassword);
+    res.redirect("/urls");
+  } else {
+    res.status(403).send("User's email is found but the password does not match");
+  }
 });
 app.post("/logout", (req,res) => {
-  res.clearCookie('username');
+  res.clearCookie('user_id');
   res.redirect("/urls");
+});
+
+
+//Implement User Registration
+app.get('/login', (req, res) => {
+  const userId = req.cookies["user_id"];
+  const loggedInUser = users[userId];
+  const templateVars = {
+    user: loggedInUser};
+  res.render('login', templateVars);
+});
+app.get('/register',(req,res) => {
+  const userId = req.cookies["user_id"];
+  const loggedInUser = users[userId];
+  const templateVars = {
+    user: loggedInUser};
+  res.render('register', templateVars);
+});
+
+
+//Registering new users and checking for Errors
+app.post('/register',(req, res) => {
+  const email = req.body.email;
+  const password = req.body.password;
+  if ((email === "") || (password === "")) {
+    res.status(400).send("Email or Password is not entered");
+  }
+  const userFound = findUserByEmail(email, users);
+  if (userFound) {
+    res.status(400).send("User already exists!");
+  }
+  const userID = createUser(email, password, users);
+  res.cookie('user_id', userID);
+  res.redirect("/urls");
+
 });
 
 

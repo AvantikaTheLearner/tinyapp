@@ -170,13 +170,17 @@ app.post("/logout", (req,res) => {
 });
 
 
-//Implement User Registration
+//Implement User Registration and Login
 app.get('/login', (req, res) => {
   const userId = req.session.user_id;
   const loggedInUser = users[userId];
   const templateVars = {
     user: loggedInUser};
-  res.render('login', templateVars);
+  if (loggedInUser) {
+    res.redirect("/urls");
+  } else {
+    res.render('login', templateVars);
+  }
 });
 
 app.get('/register',(req,res) => {
@@ -184,7 +188,12 @@ app.get('/register',(req,res) => {
   const loggedInUser = users[userId];
   const templateVars = {
     user: loggedInUser};
-  res.render('register', templateVars);
+  if (loggedInUser) {
+    res.redirect("/urls");
+  } else {
+    res.render('register', templateVars);
+  }
+  
 });
 
 //Registering new users and checking for Errors

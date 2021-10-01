@@ -1,5 +1,3 @@
-const bcrypt = require('bcryptjs');
-
 const urlsForUser = function(id, urlData) {
   const filteredUrls = {};
   const keys  = Object.keys(urlData);
@@ -23,15 +21,15 @@ const createUser = function(email, hashedPassword, users) {
   return userID;
 };
 
-const findUserByEmail = function(email, users) {
+const getUserByEmail = function(email, users) {
   for (let userKey in users) {
     const user = users[userKey];
     if (user.email === email) {
       return user;
     }
   }
-  return false;
+  return undefined;
 };
 
 
-module.exports = { urlsForUser, createUser, findUserByEmail };
+module.exports = { urlsForUser, createUser, getUserByEmail };

@@ -1,6 +1,6 @@
 const cookieSession = require('cookie-session');
 const express = require("express");
-const { urlsForUser, createUser, findUserByEmail } = require('./helpers/userFunctions');
+const { urlsForUser, createUser, getUserByEmail } = require('./helpers');
 const bcrypt = require('bcryptjs');
 const app = express();
 const PORT = 8080; // default port 8080
@@ -39,6 +39,15 @@ const users = {
   }
 };
 
+app.get("/", (req, res) => {
+  const userId = req.session.user_id;
+  const loggedInUser = users[userId];
+  if (loggedInUser) {
+    res.redirect('/urls');
+  } else {
+    res.redirect('/login');
+  }
+});
 
 app.get("/urls", (req, res) => {
   //verifies the cookie to remain set on multiple pages
@@ -46,6 +55,9 @@ app.get("/urls", (req, res) => {
   const userId = req.session.user_id;
   const loggedInUser = users[userId];
   const shortUrlFound = urlsForUser(userId, urlDatabase);
+  // if (!loggedInUser) {
+  //   res.redirect('/login');
+  // }
   const templateVars = {
     user: loggedInUser,
     filteredUrls: shortUrlFound,
@@ -122,6 +134,14 @@ app.post("/urls/:shortURL/delete", (req,res) => {
   delete urlDatabase[shortURL];
   res.redirect("/urls");
 });
+app.get("/urls/:shortURL/delete", (req,res) => {
+  const shortURL = req.params.shortURL;
+  const ID = Object.keys(users);
+  if (urlDatabase[shortURL].userID !== ID[0]) {
+    res.send("Sorry, you dont have permission to delete other user's url");
+    return;
+  }
+});
 
 //Update(CRUD) the long URL
 app.post("/urls/:id", (req,res) => {
@@ -135,8 +155,7 @@ app.post("/urls/:id", (req,res) => {
 app.post("/login", (req,res) => {
   const email = req.body.email;
   const password = req.body.password;
-  const userFoundByEmail = findUserByEmail(email, users);
-
+  const userFoundByEmail = getUserByEmail(email, users);
   if (!userFoundByEmail) {
     res.status(403).send("User cannot be found");
   } else {
@@ -151,7 +170,8 @@ app.post("/login", (req,res) => {
 
 });
 app.post("/logout", (req,res) => {
-  res.clearCookie('user_id');
+  //res.clearCookie('user_id');
+  req.session = null;
   res.redirect("/urls");
 });
 
@@ -178,10 +198,10 @@ app.post('/register',(req, res) => {
   const email = req.body.email;
   const password = req.body.password;
   const hashedPassword = bcrypt.hashSync(password, 10);
-  if ((email === "") || (hashedPassword === "")) {
+  if ((email === "") || (password === "")) {
     res.status(400).send("Email or Password is not entered");
   }
-  const userFound = findUserByEmail(email, users);
+  const userFound = getUserByEmail(email, users);
   if (userFound) {
     res.status(400).send("User already exists!");
   }

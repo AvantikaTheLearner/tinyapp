@@ -8,8 +8,6 @@ const PORT = 8080; // default port 8080
 app.set("view engine", "ejs");
 const bodyParser = require("body-parser");
 app.use(bodyParser.urlencoded({extended: true}));
-//const cookieParser = require("cookie-parser");
-//app.use(cookieParser());
 app.use(cookieSession({
   name: 'session',
   keys: ["cookie session to encrypt the values"],
@@ -29,8 +27,10 @@ const urlDatabase = {
     userID: "aJ42lW"
   }
 };
+
 const password = "purple";
 const hashedPassword = bcrypt.hashSync(password, 10);
+
 const users = {
   "aJ48lW": {
     id: "aJ48lW",
@@ -55,9 +55,6 @@ app.get("/urls", (req, res) => {
   const userId = req.session.user_id;
   const loggedInUser = users[userId];
   const shortUrlFound = urlsForUser(userId, urlDatabase);
-  // if (!loggedInUser) {
-  //   res.redirect('/login');
-  // }
   const templateVars = {
     user: loggedInUser,
     filteredUrls: shortUrlFound,
@@ -66,7 +63,6 @@ app.get("/urls", (req, res) => {
 });
 
 app.post("/urls", (req, res) => {
-  console.log(urlDatabase);
   let shortURL = Math.random().toString(36).substring(2,8);
   const userId = req.session.user_id;
   urlDatabase[shortURL] = {
@@ -80,7 +76,8 @@ app.get("/urls/new", (req, res) => {
   const userId = req.session.user_id;
   const loggedInUser = users[userId];
   const templateVars = {
-    user: loggedInUser,};
+    user: loggedInUser,
+  };
   if (loggedInUser) {
     res.render("urls_new", templateVars);
   } else {
@@ -99,12 +96,13 @@ app.get("/urls/:shortURL", (req, res) => {
   const longURL = urlDatabase[req.params.shortURL].longURL;
   const templateVars = {
     user: loggedInUser,
-    shortURL: req.params.shortURL, longURL: longURL };
+    shortURL: req.params.shortURL,
+    longURL: longURL,
+  };
   if (urlDatabase[req.params.shortURL].userID !== users[userId].id) {
     res.send("Sorry, you dont have permission to edit other user's url");
     return;
   }
-  
   res.render("urls_show", templateVars);
 });
 
@@ -130,10 +128,10 @@ app.post("/urls/:shortURL/delete", (req,res) => {
     res.send("Sorry, you dont have permission to delete other user's url");
     return;
   }
-  
   delete urlDatabase[shortURL];
   res.redirect("/urls");
 });
+
 app.get("/urls/:shortURL/delete", (req,res) => {
   const shortURL = req.params.shortURL;
   const ID = Object.keys(users);
@@ -148,29 +146,25 @@ app.post("/urls/:id", (req,res) => {
   const id = req.params.id;
   urlDatabase[id].longURL = req.body.quoteContent;
   res.redirect("/urls");
-
 });
 
 //Implementing Cookies
 app.post("/login", (req,res) => {
-  const email = req.body.email;
-  const password = req.body.password;
+  const { email, password } = req.body;
   const userFoundByEmail = getUserByEmail(email, users);
   if (!userFoundByEmail) {
     res.status(403).send("User cannot be found");
   } else {
     if (bcrypt.compareSync(password, userFoundByEmail.password)) {
-      //res.cookie('user_id', userFoundByEmail.id);
       req.session.user_id = userFoundByEmail.id;
       res.redirect("/urls");
     } else {
       res.status(403).send("User's email is found but the password does not match");
     }
   }
-
 });
+
 app.post("/logout", (req,res) => {
-  //res.clearCookie('user_id');
   req.session = null;
   res.redirect("/urls");
 });
@@ -184,6 +178,7 @@ app.get('/login', (req, res) => {
     user: loggedInUser};
   res.render('login', templateVars);
 });
+
 app.get('/register',(req,res) => {
   const userId = req.session.user_id;
   const loggedInUser = users[userId];
@@ -192,24 +187,23 @@ app.get('/register',(req,res) => {
   res.render('register', templateVars);
 });
 
-
 //Registering new users and checking for Errors
 app.post('/register',(req, res) => {
   const email = req.body.email;
   const password = req.body.password;
   const hashedPassword = bcrypt.hashSync(password, 10);
+
   if ((email === "") || (password === "")) {
     res.status(400).send("Email or Password is not entered");
   }
   const userFound = getUserByEmail(email, users);
+
   if (userFound) {
     res.status(400).send("User already exists!");
   }
   const userID = createUser(email, hashedPassword, users);
-  //res.cookie('user_id', userID);
   req.session.user_id = userID;
   res.redirect("/urls");
-
 });
 
 app.listen(PORT, () => {

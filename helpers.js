@@ -1,3 +1,4 @@
+//This function gives filtered lists of URLs for a specific user
 const urlsForUser = function(id, urlData) {
   const filteredUrls = {};
   const keys  = Object.keys(urlData);
@@ -10,6 +11,7 @@ const urlsForUser = function(id, urlData) {
   return filteredUrls;
 };
 
+//This function create and stores user's credentials for a new user
 const createUser = function(email, hashedPassword, users) {
   const userID = Math.random().toString(36).substring(2,8);
   
@@ -21,6 +23,7 @@ const createUser = function(email, hashedPassword, users) {
   return userID;
 };
 
+//This function fetches user by comparing email id from database and provided in browser
 const getUserByEmail = function(email, users) {
   for (let userKey in users) {
     const user = users[userKey];

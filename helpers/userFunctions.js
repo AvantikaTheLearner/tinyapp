@@ -1,3 +1,5 @@
+const bcrypt = require('bcryptjs');
+
 const urlsForUser = function(id, urlData) {
   const filteredUrls = {};
   const keys  = Object.keys(urlData);
@@ -10,13 +12,13 @@ const urlsForUser = function(id, urlData) {
   return filteredUrls;
 };
 
-const createUser = function(email, password, users) {
+const createUser = function(email, hashedPassword, users) {
   const userID = Math.random().toString(36).substring(2,8);
   
   users[userID] = {
     id: userID,
     email,
-    password,
+    password: hashedPassword,
   };
   return userID;
 };
@@ -31,14 +33,5 @@ const findUserByEmail = function(email, users) {
   return false;
 };
 
-const findUserByPassword = function(password, users) {
-  for (let userKey in users) {
-    const user = users[userKey];
-    if (user.password === password) {
-      return user.id;
-    }
-  }
-  return false;
-};
 
-module.exports = { urlsForUser, createUser, findUserByEmail, findUserByPassword };
+module.exports = { urlsForUser, createUser, findUserByEmail };

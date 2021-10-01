@@ -1,6 +1,7 @@
 const express = require("express");
+const { urlsForUser, createUser, findUserByEmail } = require('./helpers/userFunctions');
+const bcrypt = require('bcryptjs');
 const app = express();
-const { urlsForUser, createUser, findUserByEmail, findUserByPassword } = require('./helpers/userFunctions');
 const PORT = 8080; // default port 8080
 
 app.set("view engine", "ejs");
@@ -8,7 +9,6 @@ const bodyParser = require("body-parser");
 app.use(bodyParser.urlencoded({extended: true}));
 const cookieParser = require("cookie-parser");
 app.use(cookieParser());
-
 
 const urlDatabase = {
   b6UTxQ: {
@@ -24,11 +24,13 @@ const urlDatabase = {
     userID: "aJ42lW"
   }
 };
+const password = "purple";
+const hashedPassword = bcrypt.hashSync(password, 10);
 const users = {
   "aJ48lW": {
     id: "aJ48lW",
     email: "user@example.com",
-    password: "purple"
+    password: hashedPassword,
   }
 };
 
@@ -129,16 +131,18 @@ app.post("/login", (req,res) => {
   const email = req.body.email;
   const password = req.body.password;
   const userFoundByEmail = findUserByEmail(email, users);
-  const userFoundByPassword = findUserByPassword(password, users);
 
   if (!userFoundByEmail) {
     res.status(403).send("User cannot be found");
-  } else if (userFoundByEmail && userFoundByPassword) {
-    res.cookie('user_id', userFoundByPassword);
-    res.redirect("/urls");
   } else {
-    res.status(403).send("User's email is found but the password does not match");
+    if (bcrypt.compareSync(password, userFoundByEmail.password)) {
+      res.cookie('user_id', userFoundByEmail.id);
+      res.redirect("/urls");
+    } else {
+      res.status(403).send("User's email is found but the password does not match");
+    }
   }
+
 });
 app.post("/logout", (req,res) => {
   res.clearCookie('user_id');
@@ -167,24 +171,19 @@ app.get('/register',(req,res) => {
 app.post('/register',(req, res) => {
   const email = req.body.email;
   const password = req.body.password;
-  if ((email === "") || (password === "")) {
+  const hashedPassword = bcrypt.hashSync(password, 10);
+  if ((email === "") || (hashedPassword === "")) {
     res.status(400).send("Email or Password is not entered");
   }
   const userFound = findUserByEmail(email, users);
   if (userFound) {
     res.status(400).send("User already exists!");
   }
-  const userID = createUser(email, password, users);
+  const userID = createUser(email, hashedPassword, users);
   res.cookie('user_id', userID);
   res.redirect("/urls");
 
 });
-
-
-
-// app.get("/hello", (req, res) => {
-//   res.send("<html><body>Hello <b>World</b></body></html>\n");
-// });
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);

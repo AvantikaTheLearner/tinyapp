@@ -13,7 +13,7 @@ const urlsForUser = function(id, urlData) {
 
 //This function create and stores user's credentials for a new user
 const createUser = function(email, hashedPassword, users) {
-  const userID = Math.random().toString(36).substring(2,8);
+  const userID = generateRandomId();
   
   users[userID] = {
     id: userID,
@@ -34,5 +34,22 @@ const getUserByEmail = function(email, users) {
   return undefined;
 };
 
+//This function enables editing/deleting capabilities only if generated ID belongs to a specific user
+const idMatched = function(shortURL, users, urlDatabase) {
+  const ID = Object.keys(users);
+  let idMatchedVar = 0;
+  for (const id of ID) {
+    if (urlDatabase[shortURL].userID === id) {
+      idMatchedVar = 1;
+    }
+  }
+  return idMatchedVar;
+};
 
-module.exports = { urlsForUser, createUser, getUserByEmail };
+//This function generate ID of 6 characters randomly
+const generateRandomId = function() {
+  return Math.random().toString(36).substring(2,8);
+};
+
+
+module.exports = { urlsForUser, createUser, getUserByEmail, idMatched, generateRandomId };

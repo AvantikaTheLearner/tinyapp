@@ -1,6 +1,6 @@
 const cookieSession = require('cookie-session');
 const express = require("express");
-const { urlsForUser, createUser, getUserByEmail } = require('./helpers');
+const { urlsForUser, createUser, getUserByEmail, idMatched, generateRandomId } = require('./helpers');
 const bcrypt = require('bcryptjs');
 const app = express();
 const PORT = 8080; // default port 8080
@@ -63,7 +63,7 @@ app.get("/urls", (req, res) => {
 });
 
 app.post("/urls", (req, res) => {
-  let shortURL = Math.random().toString(36).substring(2,8);
+  let shortURL = generateRandomId();
   const userId = req.session.user_id;
   urlDatabase[shortURL] = {
     longURL: req.body.longURL,
@@ -123,8 +123,9 @@ app.get("/u/:shortURL", (req, res) => {
 
 app.post("/urls/:shortURL/delete", (req,res) => {
   const shortURL = req.params.shortURL;
-  const ID = Object.keys(users);
-  if (urlDatabase[shortURL].userID !== ID[0]) {
+  let idMatchedVar = 0;
+  idMatchedVar = idMatched(shortURL, users, urlDatabase);
+  if (!idMatchedVar) {
     res.send("Sorry, you dont have permission to delete other user's url");
     return;
   }
@@ -134,8 +135,9 @@ app.post("/urls/:shortURL/delete", (req,res) => {
 
 app.get("/urls/:shortURL/delete", (req,res) => {
   const shortURL = req.params.shortURL;
-  const ID = Object.keys(users);
-  if (urlDatabase[shortURL].userID !== ID[0]) {
+  let idMatchedVar = 0;
+  idMatchedVar = idMatched(shortURL, users, urlDatabase);
+  if (!idMatchedVar) {
     res.send("Sorry, you dont have permission to delete other user's url");
     return;
   }
@@ -164,6 +166,7 @@ app.post("/login", (req,res) => {
   }
 });
 
+//This request helps user to log out if logged in
 app.post("/logout", (req,res) => {
   req.session = null;
   res.redirect("/urls");
@@ -198,18 +201,18 @@ app.get('/register',(req,res) => {
 
 //Registering new users and checking for Errors
 app.post('/register',(req, res) => {
-  const email = req.body.email;
-  const password = req.body.password;
+  const { email, password } = req.body;
   const hashedPassword = bcrypt.hashSync(password, 10);
 
   if ((email === "") || (password === "")) {
     res.status(400).send("Email or Password is not entered");
   }
-  const userFound = getUserByEmail(email, users);
 
+  const userFound = getUserByEmail(email, users);
   if (userFound) {
     res.status(400).send("User already exists!");
   }
+
   const userID = createUser(email, hashedPassword, users);
   req.session.user_id = userID;
   res.redirect("/urls");
